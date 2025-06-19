@@ -2,6 +2,7 @@
 
 A decentralized file storage system that ensures **data privacy**, **integrity**, and **availability** — even if centralized systems fail. Built using **Solidity**, **IPFS**, and **Node.js**, with a simple HTML frontend.
 
+
 ---
 
 ## 🚀 Tech Stack
@@ -44,7 +45,7 @@ secure-storage/
 ### 1. Clone the Repo
 
 ```bash
-git clone git@github.com:krishkalra5654/secure-storage-ipfs.git
+git clone https://github.com/krishkalra5654/secure-storage-ipfs.git
 cd secure-storage-ipfs
 
 Install Node Dependencies
