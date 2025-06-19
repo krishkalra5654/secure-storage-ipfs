@@ -51,21 +51,9 @@ Install Node Dependencies
 npm install
 Start Ganache CLI or UI
 Ensure it's running on port 8545.
-ompile & Migrate Contracts
+compile & Migrate Contracts
 truffle compile
 truffle migrate
-🔐 Security-First Design
-✅ No centralized backend
-
-✅ Encrypted file hashes stored on blockchain
-
-✅ Built with decentralization and censorship-resistance in mind
-
-📬 Want to Collaborate?
-Built as part of a Web3 + Security specialization.
-Looking for internships and opportunities in secure decentralized systems.
-
-Contact: krishkalra5654@gmail.com
-LinkedIn: https://www.linkedin.com/in/krish-kalra-41aa38255
+5
 
 
