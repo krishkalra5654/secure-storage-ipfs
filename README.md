@@ -54,6 +54,6 @@ Ensure it's running on port 8545.
 compile & Migrate Contracts
 truffle compile
 truffle migrate
-5
+
 
 
