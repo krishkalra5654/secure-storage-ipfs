@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Secure Linux-Like Storage</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ipfs-core@0.18.0/dist/index.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #0a0a0a;
+      color: #00ff00;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    #walletAddress {
+      text-align: right;
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: #00ffaa;
+    }
+
+    h1 {
+      color: #00ff00;
+      border-bottom: 1px solid #00ff00;
+      padding-bottom: 10px;
+    }
+    p {
+    text-align: center;
+    font-size: 16px;
+    color: #4D90FE;
+    max-width: 600px;
+    margin: auto;
+  }
+      
+
+    input, button {
+      background-color: #000;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 8px 12px;
+      margin: 8px 0;
+      font-family: inherit;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background-color: #003300;
+    }
+
+    .terminal-box {
+      background: #000;
+      padding: 20px;
+      border: 1px solid #00ff00;
+      margin-top: 20px;
+      min-height: 100px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .terminal-box p {
+      margin: 5px 0;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div id="walletAddress">Wallet: <span id="addressDisplay">Not connected</span></div>
+
+  <h1>Decentralized Secure Storage</h1>
+  <p> This dApp allows you to securely store files using IPFS and Ethereum. 
+Your file is uploaded to IPFS, and the unique hash is stored on the blockchain 
+for integrity and verification.</p>
+
+  <form id="uploadForm">
+    <label>Folder Name:</label><br>
+    <input type="text" id="folderName" placeholder="root/home" required /><br>
+    <label>Select File:</label><br>
+    <input type="file" id="fileInput" required /><br>
+    <button type="submit">Upload to IPFS</button>
+  </form>
+
+  <div id="output" class="terminal-box">
+    <p>System initialized. Connect your wallet to begin.</p>
+  </div>
+
+  <script>
+    const SECRET_KEY = "my-secret-key-123";
+    let web3;
+    let ipfs;
+    let contract;
+
+    window.addEventListener("load", async () => {
+      try {
+        if (window.ethereum) {
+          web3 = new Web3(window.ethereum);
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const accounts = await web3.eth.getAccounts();
+          document.getElementById("addressDisplay").innerText = accounts[0];
+          showMessage("MetaMask connected.");
+        } else {
+          showError("Please install MetaMask to use this app.");
+          return;
+        }
+
+        ipfs = await window.IpfsCore.create();
+        showMessage("Embedded IPFS node initialized.");
+
+        await initContract();
+      } catch (err) {
+        showError("Initialization error: " + err.message);
+      }
+    });
+
+    async function initContract() {
+      try {
+        const response = await fetch('./build/contracts/SecureStorage.json');
+        const contractJson = await response.json();
+        const networkId = await web3.eth.net.getId();
+        const deployedNetwork = contractJson.networks[networkId];
+
+        if (!deployedNetwork) throw new Error("Contract not deployed on this network.");
+
+        contract = new web3.eth.Contract(contractJson.abi, deployedNetwork.address);
+        const accounts = await web3.eth.getAccounts();
+        showMessage("Contract initialized. Account: " + accounts[0]);
+      } catch (err) {
+        showError("Contract error: " + err.message);
+      }
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileInput = document.getElementById('fileInput');
+      if (!fileInput.files.length) return showError("No file selected.");
+
+      try {
+        const file = fileInput.files[0];
+        const folderName = document.getElementById('folderName').value || "default";
+        const accounts = await web3.eth.getAccounts();
+
+        const content = await readFileAsText(file);
+        const encrypted = CryptoJS.AES.encrypt(content, SECRET_KEY).toString();
+
+        const { cid } = await ipfs.add(encrypted);
+        const ipfsHash = cid.toString();
+
+        await contract.methods.storeFile(ipfsHash, file.name, folderName, true)
+          .send({ from: accounts[0] });
+
+        showMessage(`Uploaded <strong>${file.name}</strong> to IPFS. Hash: <code>${ipfsHash}</code>`);
+      } catch (err) {
+        showError("Upload failed: " + err.message);
+      }
+    });
+
+    function readFileAsText(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsText(file);
+      });
+    }
+
+    function showMessage(msg) {
+      const output = document.getElementById('output');
+      output.innerHTML += `<p>${msg}</p>`;
+    }
+
+    function showError(msg) {
+      const output = document.getElementById('output');
+      output.innerHTML += `<p style="color:red;">${msg}</p>`;
+    }
+  </script>
+</body>
+</html>
+
